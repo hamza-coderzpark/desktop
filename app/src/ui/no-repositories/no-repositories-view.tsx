@@ -35,6 +35,9 @@ interface INoRepositoriesProps {
 
   readonly accounts: ReadonlyArray<Account>
 
+  /** The currently active GitHub.com account */
+  readonly activeDotComAccount: Account | null
+
   /**
    * A map keyed on a user account (GitHub.com or GitHub Enterprise)
    * containing an object with repositories that the authenticated
@@ -78,7 +81,10 @@ export class NoRepositoriesView extends React.Component<
   INoRepositoriesState
 > {
   private get selectedAccount() {
-    return this.state.selectedAccount ?? this.props.accounts.at(0)
+    // Use the activeDotComAccount if available, otherwise fallback
+    return this.state.selectedAccount 
+      ?? this.props.activeDotComAccount 
+      ?? this.props.accounts.at(0)
   }
 
   public constructor(props: INoRepositoriesProps) {
@@ -86,7 +92,7 @@ export class NoRepositoriesView extends React.Component<
 
     this.state = {
       selectedRepository: null,
-      selectedAccount: props.accounts.at(0),
+      selectedAccount: props.activeDotComAccount ?? props.accounts.at(0),
       filterText: '',
     }
   }
@@ -137,7 +143,9 @@ export class NoRepositoriesView extends React.Component<
           ? this.props.accounts.find(a =>
               accountEquals(a, currentlySelectedAccount)
             )
-          : undefined) ?? this.props.accounts.at(0)
+          : undefined) 
+          ?? this.props.activeDotComAccount 
+          ?? this.props.accounts.at(0)
 
       if (currentlySelectedAccount !== newSelectedAccount) {
         this.setState({ selectedAccount: newSelectedAccount })

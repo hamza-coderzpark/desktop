@@ -2086,7 +2086,11 @@ export class AppStore extends TypedBaseStore<IAppState> {
     // We don't want to run the pull request updater when the app is in
     // the background.
     if (this.appIsFocused && isRepositoryWithGitHubRepository(repository)) {
-      const account = getAccountForRepository(this.accounts, repository)
+      const account = getAccountForRepository(
+        this.accounts,
+        repository,
+        this.accountsStore.getActiveDotComAccount()
+      )
       if (account !== null) {
         return this.pullRequestCoordinator.startPullRequestUpdater(
           repository,
@@ -3422,7 +3426,11 @@ export class AppStore extends TypedBaseStore<IAppState> {
       this.statsStore.increment('coAuthoredCommits')
     }
 
-    const account = getAccountForRepository(this.accounts, repository)
+    const account = getAccountForRepository(
+      this.accounts,
+      repository,
+      this.accountsStore.getActiveDotComAccount()
+    )
     if (repository.gitHubRepository !== null) {
       if (account !== null) {
         if (isDotComAccount(account)) {
@@ -4791,7 +4799,11 @@ export class AppStore extends TypedBaseStore<IAppState> {
       // needs to be able to differentiate between a GHES account and a
       // generic account and it can't do that only based on the endpoint.
       this.statsStore.recordPush(
-        getAccountForRepository(this.accounts, repository),
+        getAccountForRepository(
+          this.accounts,
+          repository,
+          this.accountsStore.getActiveDotComAccount()
+        ),
         options
       )
     })
@@ -6536,7 +6548,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
     let updatedRepository = repository
     const account: Account | null = getAccountForRepository(
       this.accounts,
-      updatedRepository
+      updatedRepository,
+      this.accountsStore.getActiveDotComAccount()
     )
 
     // If we don't have a user association, it might be because we haven't yet
@@ -6720,7 +6733,11 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
   public async _refreshPullRequests(repository: Repository): Promise<void> {
     if (isRepositoryWithGitHubRepository(repository)) {
-      const account = getAccountForRepository(this.accounts, repository)
+      const account = getAccountForRepository(
+        this.accounts,
+        repository,
+        this.accountsStore.getActiveDotComAccount()
+      )
       if (account !== null) {
         await this.pullRequestCoordinator.refreshPullRequests(
           repository,
@@ -7196,7 +7213,11 @@ export class AppStore extends TypedBaseStore<IAppState> {
   public async _showCreateForkDialog(
     repository: RepositoryWithGitHubRepository
   ) {
-    const account = getAccountForRepository(this.accounts, repository)
+    const account = getAccountForRepository(
+      this.accounts,
+      repository,
+      this.accountsStore.getActiveDotComAccount()
+    )
     if (account === null) {
       return
     }

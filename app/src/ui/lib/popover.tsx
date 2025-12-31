@@ -297,7 +297,9 @@ export class Popover extends React.Component<IPopoverProps, IPopoverState> {
     // it can cause weird layout glitches.
     const style: React.CSSProperties = {
       position: 'fixed',
-      zIndex: 17, // same as --foldout-z-index
+      // Use z-index higher than dialogs (--popup-z-index: 19) so that
+      // popovers inside dialogs (like AccountPicker in Publish dialog) work correctly
+      zIndex: 20,
       height: 'auto',
       ...this.props.style,
     }

@@ -393,11 +393,18 @@ export class ChangesSidebar extends React.Component<IChangesSidebarProps, {}> {
         : []
 
     const isShowingStashEntry = selection.kind === ChangesSelectionKind.Stash
+    
+    // Get the account for this repository (for authentication, API calls, etc.)
     const repositoryAccount = getAccountForRepository(
       this.props.accounts,
-      this.props.repository,
-      (this.props.dispatcher as any).appStore?.accountsStore
+      this.props.repository
     )
+    
+    // For github.com repos with multiple accounts, prefer the active account for commit panel
+    // This ensures the email dropdown shows emails from the active account
+    const repositoryAccountForCommit = this.props.repository.gitHubRepository?.endpoint === 'https://api.github.com'
+      ? ((this.props.dispatcher as any).appStore?.accountsStore?.getActiveDotComAccount() || repositoryAccount)
+      : repositoryAccount
 
     const ChangesListComponent = enableFilteredChangesList()
       ? FilterChangesList
@@ -409,7 +416,7 @@ export class ChangesSidebar extends React.Component<IChangesSidebarProps, {}> {
           ref={this.changesListRef}
           dispatcher={this.props.dispatcher}
           repository={this.props.repository}
-          repositoryAccount={repositoryAccount}
+          repositoryAccount={repositoryAccountForCommit}
           workingDirectory={workingDirectory}
           conflictState={conflictState}
           mostRecentLocalCommit={this.props.mostRecentLocalCommit}

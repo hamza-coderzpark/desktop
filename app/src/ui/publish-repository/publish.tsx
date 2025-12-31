@@ -67,6 +67,9 @@ interface IPublishProps {
   /** The signed in accounts. */
   readonly accounts: ReadonlyArray<Account>
 
+  /** The currently active GitHub.com account */
+  readonly activeDotComAccount: Account | null
+
   /** The function to call when the dialog should be dismissed. */
   readonly onDismissed: () => void
 }
@@ -194,10 +197,17 @@ export class Publish extends React.Component<IPublishProps, IPublishState> {
     const tab = this.state.currentTab
     const currentTabState = this.getCurrentTabState()
     const accounts = this.getAccountsForTab(tab, this.props.accounts)
-    const account =
-      (currentTabState.kind === 'enterprise'
-        ? currentTabState.selectedAccount
-        : undefined) ?? accounts.at(0)
+    // For DotCom tab, use the active account (from props) if available
+    // For Enterprise tab, use the selectedAccount from state
+    let account: Account | undefined
+    if (currentTabState.kind === 'dotcom') {
+      // Use the active DotCom account, or fall back to first DotCom account
+      account = accounts.find(a => a.id === this.props.activeDotComAccount?.id)
+        ?? this.props.activeDotComAccount
+        ?? accounts.at(0)
+    } else {
+      account = currentTabState.selectedAccount ?? accounts.at(0)
+    }
 
     if (account) {
       return (
@@ -216,6 +226,13 @@ export class Publish extends React.Component<IPublishProps, IPublishState> {
 
   private onSelectedAccountChanged = (account: Account | null) => {
     const tabState = this.getCurrentTabState()
+    
+    // For DotCom tab, update the active account so credentials are used correctly
+    if (tabState.kind === 'dotcom' && account && isDotComAccount(account)) {
+      this.props.dispatcher.switchActiveDotComAccount(account.id)
+    }
+    
+    // For Enterprise tab, update the selected account in state
     if (tabState.kind === 'enterprise') {
       const enterpriseTabState = {
         ...this.state.enterpriseTabState,
@@ -260,12 +277,20 @@ export class Publish extends React.Component<IPublishProps, IPublishState> {
   private getAccountForTab(tab: PublishTab): Account | null {
     const tabState = this.getTabState(tab)
     const tabAccounts = this.getAccountsForTab(tab, this.props.accounts)
-    const selectedAccount =
-      (tabState.kind === 'enterprise'
-        ? tabAccounts.find(
-            a => a.endpoint === tabState.selectedAccount?.endpoint
-          )
-        : undefined) ?? tabAccounts.at(0)
+    
+    let selectedAccount: Account | undefined
+    
+    if (tabState.kind === 'dotcom') {
+      // For DotCom tab, use the active account
+      selectedAccount = tabAccounts.find(a => a.id === this.props.activeDotComAccount?.id)
+        ?? this.props.activeDotComAccount
+        ?? tabAccounts.at(0)
+    } else {
+      // For Enterprise tab, use the selectedAccount from state
+      selectedAccount = tabAccounts.find(
+        a => a.endpoint === tabState.selectedAccount?.endpoint
+      ) ?? tabAccounts.at(0)
+    }
 
     return selectedAccount ?? null
   }

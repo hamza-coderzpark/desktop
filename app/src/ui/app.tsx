@@ -825,8 +825,11 @@ export class App extends React.Component<IAppProps, IAppState> {
   }
 
   private showCreateTutorialRepositoryPopup = () => {
+    // Use active DotCom account if available, otherwise fall back to first DotCom account
     const account =
-      this.state.accounts.find(isDotComAccount) ?? this.state.accounts.at(0)
+      this.state.accounts.find(
+        a => a.id === this.state.activeDotComAccountId && isDotComAccount(a)
+      ) ?? this.state.accounts.find(isDotComAccount) ?? this.state.accounts.at(0)
 
     if (!account) {
       return
@@ -1549,12 +1552,16 @@ export class App extends React.Component<IAppProps, IAppState> {
             onDismissed={onPopupDismissedFn}
           />
         )
-      case PopupType.Preferences:
+      case PopupType.Preferences: {
         let repository = this.getRepository()
 
         if (repository instanceof CloningRepository) {
           repository = null
         }
+
+        const activeDotComAccount = this.state.accounts.find(
+          a => a.id === this.state.activeDotComAccountId && isDotComAccount(a)
+        ) ?? this.state.accounts.find(isDotComAccount) ?? null
 
         return (
           <Preferences
@@ -1562,6 +1569,7 @@ export class App extends React.Component<IAppProps, IAppState> {
             initialSelectedTab={popup.initialSelectedTab}
             dispatcher={this.props.dispatcher}
             accounts={this.state.accounts}
+            activeDotComAccount={activeDotComAccount}
             confirmRepositoryRemoval={
               this.state.askForConfirmationOnRepositoryRemoval
             }
@@ -1605,6 +1613,7 @@ export class App extends React.Component<IAppProps, IAppState> {
             showDiffCheckMarks={this.state.showDiffCheckMarks}
           />
         )
+      }
       case PopupType.RepositorySettings: {
         const repository = popup.repository
         const state = this.props.repositoryStateManager.get(repository)
@@ -1733,16 +1742,22 @@ export class App extends React.Component<IAppProps, IAppState> {
             onQuitAndInstall={this.onQuitAndInstall}
           />
         )
-      case PopupType.PublishRepository:
+      case PopupType.PublishRepository: {
+        const activeDotComAccount = this.state.accounts.find(
+          a => a.id === this.state.activeDotComAccountId && isDotComAccount(a)
+        ) ?? this.state.accounts.find(isDotComAccount) ?? null
+        
         return (
           <Publish
             key="publish"
             dispatcher={this.props.dispatcher}
             repository={popup.repository}
             accounts={this.state.accounts}
+            activeDotComAccount={activeDotComAccount}
             onDismissed={onPopupDismissedFn}
           />
         )
+      }
       case PopupType.UntrustedCertificate:
         return (
           <UntrustedCertificate
@@ -3380,9 +3395,14 @@ export class App extends React.Component<IAppProps, IAppState> {
       : this.oneAccountPerKind(this.state.accounts)
 
     if (this.inNoRepositoriesViewState()) {
+      const activeDotComAccount = accounts.find(
+        a => a.id === this.state.activeDotComAccountId && isDotComAccount(a)
+      ) ?? accounts.find(isDotComAccount) ?? null
+
       return (
         <NoRepositoriesView
           accounts={accounts}
+          activeDotComAccount={activeDotComAccount}
           onCreate={this.showCreateRepository}
           onClone={this.showCloneRepo}
           onAdd={this.showAddLocalRepo}

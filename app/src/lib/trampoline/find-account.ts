@@ -23,6 +23,16 @@ export async function findGitHubTrampolineAccount(
 ): Promise<Account | undefined> {
   const accounts = await accountsStore.getAll()
   const parsedUrl = new URL(remoteUrl)
+  
+  // For github.com, prefer the active dotcom account
+  if (parsedUrl.origin === 'https://github.com') {
+    const activeAccount = accountsStore.getActiveDotComAccount()
+    if (activeAccount) {
+      return activeAccount
+    }
+  }
+  
+  // For other endpoints (enterprise), find matching account
   return accounts.find(
     a => new URL(getHTMLURL(a.endpoint)).origin === parsedUrl.origin
   )

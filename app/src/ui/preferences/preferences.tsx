@@ -51,6 +51,8 @@ import {
 interface IPreferencesProps {
   readonly dispatcher: Dispatcher
   readonly accounts: ReadonlyArray<Account>
+  /** The currently active GitHub.com account */
+  readonly activeDotComAccount: Account | null
   readonly repository: Repository | null
   readonly onDismissed: () => void
   readonly useWindowsOpenSSH: boolean
@@ -204,8 +206,11 @@ export class Preferences extends React.Component<
     let committerEmail = initialCommitterEmail
 
     if (!committerName || !committerEmail) {
+      // Use active account if available, otherwise fall back to first DotCom account
       const { accounts } = this.props
-      const account = accounts.find(isDotComAccount) ?? accounts.at(0)
+      const account = this.props.activeDotComAccount 
+        ?? accounts.find(isDotComAccount) 
+        ?? accounts.at(0)
 
       if (account) {
         if (!committerName) {

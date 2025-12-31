@@ -249,10 +249,14 @@ export async function git(
       // See https://github.com/git/git/blob/a7312d1a2/editor.c#L11-L15
       opts.env = { TERM: 'dumb', ...combinedEnv }
 
-      const commandName = `${name}: git ${args.join(' ')}`
+      // Force credential.useHttpPath=true for all commands so that the credential helper
+      // receives the full repository path. This allows us to distinguish between
+      // repositories belonging to different accounts.
+      const argsWithConfig = ['-c', 'credential.useHttpPath=true', ...args]
+      const commandName = `${name}: git ${argsWithConfig.join(' ')}`
 
       const result = await GitPerf.measure(commandName, () =>
-        exec(args, path, opts)
+        exec(argsWithConfig, path, opts)
       ).catch(err => {
         // If this is an exception thrown by Node.js (as opposed to
         // dugite) let's keep the salient details but include the name of
