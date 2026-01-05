@@ -1664,11 +1664,16 @@ export class App extends React.Component<IAppProps, IAppState> {
             isTopMost={isTopMost}
           />
         )
-      case PopupType.CloneRepository:
+      case PopupType.CloneRepository: {
+        const activeDotComAccount = this.state.accounts.find(
+          a => a.id === this.state.activeDotComAccountId && isDotComAccount(a)
+        ) ?? this.state.accounts.find(isDotComAccount) ?? null
+
         return (
           <CloneRepository
             key="clone-repository"
             accounts={this.state.accounts}
+            activeDotComAccount={activeDotComAccount}
             initialURL={popup.initialURL}
             onDismissed={onPopupDismissedFn}
             dispatcher={this.props.dispatcher}
@@ -1679,6 +1684,7 @@ export class App extends React.Component<IAppProps, IAppState> {
             isTopMost={isTopMost}
           />
         )
+      }
       case PopupType.CreateBranch: {
         const state = this.props.repositoryStateManager.get(popup.repository)
         const branchesState = state.branchesState

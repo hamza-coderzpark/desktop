@@ -37,6 +37,9 @@ interface ICloneRepositoryProps {
 
   readonly accounts: ReadonlyArray<Account>
 
+  /** The currently active GitHub.com account */
+  readonly activeDotComAccount: Account | null
+
   /** The initial URL or `owner/name` shortcut to use. */
   readonly initialURL: string | null
 
@@ -396,24 +399,39 @@ export class CloneRepository extends React.Component<
 
   private onSelectedAccountChanged = (account: Account) => {
     if (this.props.selectedTab !== CloneRepositoryTab.Generic) {
+      // Clear the selected repository since it belongs to the previous account
       this.setGitHubTabState(
-        { selectedAccount: account },
+        { selectedAccount: account, selectedItem: null, filterText: '' },
         this.props.selectedTab
       )
+      
+      // Trigger repository refresh for the newly selected account
+      this.props.onRefreshRepositories(account)
     }
   }
 
   private getAccountForTab(tab: CloneRepositoryTab): Account | null {
     const tabState = this.getTabState(tab)
     const tabAccounts = this.getAccountsForTab(tab, this.props.accounts)
-    const selectedAccount =
-      (tabState.selectedAccount
-        ? tabAccounts.find(
-            a => a.endpoint === tabState.selectedAccount?.endpoint
-          )
-        : undefined) ?? tabAccounts.at(0)
-
-    return selectedAccount ?? null
+    
+    // If user has explicitly selected an account, use it
+    if (tabState.selectedAccount) {
+      const found = tabAccounts.find(
+        a => a.endpoint === tabState.selectedAccount?.endpoint
+      )
+      if (found) return found
+    }
+    
+    // For DotCom tab, use active account if available
+    if (tab === CloneRepositoryTab.DotCom && this.props.activeDotComAccount) {
+      const found = tabAccounts.find(
+        a => a.id === this.props.activeDotComAccount?.id
+      )
+      if (found) return found
+    }
+    
+    // Fallback to first account
+    return tabAccounts.at(0) ?? null
   }
 
   private getGitHubTabState(
@@ -732,7 +750,15 @@ export class CloneRepository extends React.Component<
       return { url }
     }
 
-    const account = await findAccountForRemoteURL(url, this.props.accounts)
+    // For GitHub tabs, use the selected account from the UI
+    // For Generic/URL tab, try to find the account from the URL
+    let account: Account | null = null
+    if (this.props.selectedTab !== CloneRepositoryTab.Generic) {
+      account = this.getAccountForTab(this.props.selectedTab)
+    } else {
+      account = await findAccountForRemoteURL(url, this.props.accounts)
+    }
+
     if (lastParsedIdentifier !== null && account !== null) {
       const api = API.fromAccount(account)
       const { owner, name } = lastParsedIdentifier
